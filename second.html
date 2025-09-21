@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Video Adventure</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background: #000000;
+            color: #00ff00;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Animated stars background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(2px 2px at 20px 30px, #ffd700, transparent),
+                radial-gradient(2px 2px at 40px 70px, #ffd700, transparent),
+                radial-gradient(1px 1px at 90px 40px, #ffd700, transparent),
+                radial-gradient(1px 1px at 130px 80px, #ffd700, transparent),
+                radial-gradient(2px 2px at 160px 30px, #ffd700, transparent),
+                radial-gradient(1px 1px at 200px 90px, #ffd700, transparent),
+                radial-gradient(2px 2px at 240px 50px, #ffd700, transparent),
+                radial-gradient(1px 1px at 280px 10px, #ffd700, transparent),
+                radial-gradient(1px 1px at 320px 70px, #ffd700, transparent),
+                radial-gradient(2px 2px at 360px 40px, #ffd700, transparent);
+            background-repeat: repeat;
+            background-size: 400px 100px;
+            animation: stars 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes stars {
+            from { transform: translateX(0); }
+            to { transform: translateX(-400px); }
+        }
+
+        /* Main container with pixel border */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 4px solid #00ff00;
+            border-radius: 0;
+            background: rgba(0, 0, 0, 0.95);
+            position: relative;
+            margin-top: 20px;
+            box-shadow: 
+                0 0 30px #00ff00,
+                inset 0 0 20px rgba(0, 255, 0, 0.1);
+        }
+
+        /* Game UI Header */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 2px solid #00ff00;
+            margin-bottom: 30px;
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .player-label {
+            font-size: 12px;
+            color: #00aaff;
+        }
+
+        .player-label.p2 {
+            color: #ff00aa;
+        }
+
+        .health-bar {
+            width: 150px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            background: #000000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #88ff00);
+            width: 80%;
+            animation: healthPulse 2s ease-in-out infinite alternate;
+        }
+
+        .health-fill.p2 {
+            background: linear-gradient(90deg, #ff00aa, #ff88aa);
+        }
+
+        @keyframes healthPulse {
+            from { filter: brightness(1); }
+            to { filter: brightness(1.2); }
+        }
+
+        .highscore {
+            text-align: center;
+            color: #ffd700;
+            font-size: 16px;
+            text-shadow: 2px 2px 0px #000000;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 2px 2px 0px #000000, 0 0 10px #ffd700; }
+            to { text-shadow: 2px 2px 0px #000000, 0 0 20px #ffd700, 0 0 30px #ffd700; }
+        }
+
+        /* Pixel art characters */
+        .character {
+            width: 80px;
+            height: 80px;
+            position: absolute;
+            image-rendering: pixelated;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        .character.left {
+            left: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: 
+                linear-gradient(90deg, transparent 20%, #00aaff 20%, #00aaff 80%, transparent 80%),
+                linear-gradient(0deg, transparent 20%, #ffdd00 20%, #ffdd00 40%, #ffaa88 40%, #ffaa88 60%, #ffdd00 60%, #ffdd00 80%, transparent 80%);
+            background-size: 80px 20px, 20px 80px;
+            background-position: 0 30px, 30px 0;
+        }
+
+        .character.right {
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%) scaleX(-1);
+            background: 
+                linear-gradient(90deg, transparent 20%, #00ff88 20%, #00ff88 80%, transparent 80%),
+                linear-gradient(0deg, transparent 20%, #88aaff 20%, #88aaff 80%, transparent 80%);
+            background-size: 80px 30px, 30px 80px;
+            background-position: 0 25px, 25px 0;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-60%) scale(1.05); }
+        }
+
+        /* Main game title */
+        .game-title {
+            text-align: center;
+            font-size: 48px;
+            color: #ff00aa;
+            text-shadow: 
+                4px 4px 0px #00ffaa,
+                8px 8px 0px #000000;
+            margin: 40px 0;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+            position: relative;
+        }
+
+        @keyframes titleGlow {
+            from { 
+                filter: brightness(1);
+                transform: scale(1);
+            }
+            to { 
+                filter: brightness(1.1) saturate(1.2);
+                transform: scale(1.02);
+            }
+        }
+
+        /* Glitch effect for title */
+        .game-title::before,
+        .game-title::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .game-title::before {
+            animation: glitch1 2s infinite;
+            color: #ff0000;
+            z-index: -1;
+        }
+
+        .game-title::after {
+            animation: glitch2 2s infinite;
+            color: #0000ff;
+            z-index: -2;
+        }
+
+        @keyframes glitch1 {
+            0%, 98% { transform: translate(0); }
+            2% { transform: translate(2px, 0); }
+        }
+
+        @keyframes glitch2 {
+            0%, 98% { transform: translate(0); }
+            4% { transform: translate(-2px, 0); }
+        }
+
+        /* Game buttons */
+        .game-btn {
+            background: linear-gradient(135deg, #00ff00, #00aa00);
+            border: 3px solid #ffffff;
+            color: #000000;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            padding: 15px 30px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.1s ease;
+            text-transform: uppercase;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 
+                4px 4px 0px #004400,
+                0 0 20px rgba(0, 255, 0, 0.5);
+            border-radius: 0;
+        }
+
+        .game-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 
+                6px 6px 0px #004400,
+                0 0 30px rgba(0, 255, 0, 0.8);
+        }
+
+        .game-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 
+                2px 2px 0px #004400,
+                0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        /* Choice buttons specific styling */
+        .choice-btn.yes-btn {
+            background: linear-gradient(135deg, #00ff00, #00dd00);
+            box-shadow: 
+                4px 4px 0px #006600,
+                0 0 15px rgba(0, 255, 0, 0.6);
+        }
+
+        .choice-btn.no-btn {
+            background: linear-gradient(135deg, #ff0044, #dd0022);
+            box-shadow: 
+                4px 4px 0px #660022,
+                0 0 15px rgba(255, 0, 68, 0.6);
+        }
+
+        /* Video container with pixel styling */
+        .video-container {
+            border: 4px solid #00ffaa;
+            background: #000000;
+            position: relative;
+            border-radius: 0;
+            box-shadow: 
+                0 0 30px #00ffaa,
+                inset 0 0 10px rgba(0, 255, 170, 0.2);
+        }
+
+        .video-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00ffaa, #ff00aa, #ffaa00, #00ffaa);
+            z-index: -1;
+            border-radius: 0;
+            animation: borderGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        video {
+            filter: contrast(1.2) saturate(1.1);
+            border: none;
+            width: 100%;
+            height: 500px;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Message overlay that appears on top of video */
+        .message-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 3px solid #00ff00;
+            padding: 20px 25px;
+            text-align: center;
+            color: #00ff00;
+            font-size: 12px;
+            line-height: 1.5;
+            max-width: 80%;
+            z-index: 100;
+            display: none;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 0, 0.5),
+                inset 0 0 20px rgba(0, 255, 0, 0.1);
+            animation: messageGlow 2s ease-in-out infinite alternate;
+        }
+
+        .message-overlay.show {
+            display: block;
+            animation: messageSlideIn 0.5s ease-out, messageGlow 2s ease-in-out infinite alternate 0.5s;
+        }
+
+        @keyframes messageSlideIn {
+            from { 
+                opacity: 0;
+                transform: translate(-50%, -60%) scale(0.8);
+            }
+            to { 
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @keyframes messageGlow {
+            from { 
+                border-color: #00ff00;
+                box-shadow: 0 0 30px rgba(0, 255, 0, 0.5), inset 0 0 20px rgba(0, 255, 0, 0.1);
+            }
+            to { 
+                border-color: #00ffaa;
+                box-shadow: 0 0 40px rgba(0, 255, 170, 0.8), inset 0 0 30px rgba(0, 255, 170, 0.2);
+            }
+        }
+
+        .message-text {
+            margin-bottom: 20px;
+            color: #ffffff;
+            text-shadow: 1px 1px 0px #000000;
+        }
+
+        /* Choice buttons in overlay */
+        .overlay-choice-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .overlay-choice-btn {
+            background: linear-gradient(135deg, #00ff00, #00aa00);
+            border: 2px solid #ffffff;
+            color: #000000;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            text-transform: uppercase;
+            box-shadow: 3px 3px 0px #004400;
+        }
+
+        .overlay-choice-btn:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px #004400;
+        }
+
+        .overlay-choice-btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px #004400;
+        }
+
+        .overlay-choice-btn.no-btn {
+            background: linear-gradient(135deg, #ff0044, #dd0022);
+            box-shadow: 3px 3px 0px #660022;
+        }
+
+        .overlay-choice-btn.no-btn:hover {
+            box-shadow: 4px 4px 0px #660022;
+        }
+
+        .overlay-choice-btn.no-btn:active {
+            box-shadow: 1px 1px 0px #660022;
+        }
+
+        /* Choice overlay for end-of-video choices */
+        .choice-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            animation: fadeIn 0.5s ease-in;
+            z-index: 50;
+        }
+
+        .choice-overlay.show {
+            display: flex;
+        }
+
+        /* Info panels with retro styling */
+        .video-info {
+            background: linear-gradient(135deg, rgba(0, 255, 0, 0.1), rgba(0, 170, 255, 0.1));
+            border: 2px solid #00aaff;
+            color: #00ffaa;
+            position: relative;
+            overflow: hidden;
+            border-radius: 0;
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+        }
+
+        .video-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: scan 3s infinite;
+        }
+
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .video-title {
+            color: #ffaa00;
+            text-shadow: 2px 2px 0px #000000;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .video-description {
+            color: #00ffaa;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        /* Progress bar with pixel styling */
+        .progress-bar {
+            background: #222222;
+            border: 2px solid #00ff00;
+            height: 20px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 0;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #00ff00, #ffff00, #ff00ff);
+            height: 100%;
+            position: relative;
+            animation: progressPulse 1s ease-in-out infinite alternate;
+            transition: width 0.3s ease;
+        }
+
+        @keyframes progressPulse {
+            from { filter: brightness(1); }
+            to { filter: brightness(1.3); }
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 4px,
+                rgba(255, 255, 255, 0.3) 4px,
+                rgba(255, 255, 255, 0.3) 8px
+            );
+            animation: progressStripes 0.5s linear infinite;
+        }
+
+        @keyframes progressStripes {
+            from { transform: translateX(0); }
+            to { transform: translateX(8px); }
+        }
+
+        /* Scanlines effect */
+        .container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.03) 2px,
+                rgba(0, 255, 0, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .game-title {
+                font-size: 24px;
+            }
+            
+            .character {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .game-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .health-bar {
+                width: 120px;
+            }
+            
+            .container {
+                margin-top: 10px;
+                padding: 10px;
+            }
+
+            video {
+                height: 250px;
+            }
+            
+            .choice-btn {
+                padding: 12px 20px;
+                font-size: 12px;
+            }
+
+            .message-overlay {
+                max-width: 90%;
+                font-size: 10px;
+                padding: 15px 20px;
+            }
+
+            .overlay-choice-btn {
+                font-size: 8px;
+                padding: 8px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Game Header with Player Info -->
+        <!-- <div class="game-header">
+            <div class="player-info">
+                <div class="player-label">PLAYER 1</div>
+                <div class="health-bar">
+                    <div class="health-fill"></div>
+                </div>
+            </div>
+            
+            <div class="highscore">HIGHSCORE 2500</div>
+            
+            <div class="player-info">
+                <div class="player-label p2">PLAYER 2</div>
+                <div class="health-bar">
+                    <div class="health-fill p2"></div>
+                </div>
+            </div>
+        </div> -->
+
+        <!-- Pixel Characters -->
+        <div class="character left"></div>
+        <div class="character right"></div>
+        
+        <!-- <h1 class="game-title" data-text="FRAUD">FRAUD</h1> -->
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="video-info">
+            <div class="video-title" id="videoTitle">LEVEL 1: THE BEGINNING</div>
+            <div class="video-description" id="videoDescription">Your adventure starts here. Make your choice wisely!</div>
+        </div>
+
+        <div class="video-container">
+            <video id="mainVideo" muted autoplay>
+                <source src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            <!-- Message overlay that appears on top of video -->
+            <div class="message-overlay" id="messageOverlay">
+                <div class="message-text" id="messageText">Your message will appear here...</div>
+                <div class="overlay-choice-buttons">
+                    <button class="overlay-choice-btn yes-btn" id="overlayYesBtn">✓ YES</button>
+                    <button class="overlay-choice-btn no-btn" id="overlayNoBtn">✗ NO</button>
+                </div>
+            </div>
+            
+            <!-- Choice overlay for end-of-video -->
+            <div class="choice-overlay" id="choiceOverlay">
+                <button class="choice-btn yes-btn game-btn" id="yesBtn">✓ YES</button>
+                <button class="choice-btn no-btn game-btn" id="noBtn">✗ NO</button>
+            </div>
+        </div>
+
+        <button class="restart-btn game-btn" id="restartBtn">START</button>
+    </div>
+
+    <script>
+       const videoData = {
+    1: {
+        title: "Stranger call",
+        description: "Your adventure starts here. Make your choice wisely!",
+        src: "1.mp4",
+        yesNext: 2,
+        noNext: 3,
+        // Add timed popups here - time in seconds
+        timedPopups: [
+            { 
+                time: 13, 
+                message: "If a Stranger is call you, will you attend the call?", 
+                yesText: "Yes!", 
+                noText: "No",
+                yesNext: 2,  // Navigate to video 2 if Yes
+                noNext: 3    // Navigate to video 3 if No
+            }
+        ]
+    },
+    2: {
+        title: "You Attended The Call",
+        description: "You decided to answer the call...",
+        src: "attend.mp4",
+        // Auto progression - no choices, automatically goes to next video
+        autoNext: 5,  // Automatically play video 8 when this video ends
+        // Optional: You can still add timed popups for information without choices
+    },
+    3: {
+        title: "You Ignored The Call",
+        description: "You chose the safe path and ignored the call.",
+        src: "declined.mp4",
+        autoNext: 5
+    },
+    4: {
+        title: "UPI Account Creation",
+        src: "prakash.mp4",
+        timedPopups: [
+            { 
+                time: 12, 
+                message: "Will You Create the UPI Account?", 
+                yesText: "Maybe", 
+                noText: "Sure",
+                yesNext: 7,
+                noNext: 7
+               
+                // No navigation - this is just for reflection
+            }
+        ]
+    },
+    5: {
+        title: "",
+        description: "",
+        src: "moments.mp4",
+        autoNext: 6
+       
+    },
+    6: {
+        title: "Message From Unknown Person",
+        src: "message2.mp4",
+        timedPopups: [
+            { 
+                time: 12, 
+                message: "Will You Create the UPI Account?", 
+                yesText: "Maybe", 
+                noText: "Sure",
+                yesNext: 7,
+                noNext: 7
+                // No navigation - this is just for reflection
+            }
+        ]
+    },
+    7: {
+        title: "",
+        src: "moments.mp4",
+        autoNext: 8
+    },
+    8: {
+        title: "The Scammer's Trap",
+        description: "The scammer is trying to get your information...",
+        src: "trap.mp4",
+        // Auto progression to the next educational video
+        timedPopups: [
+            { 
+                time: 11, 
+                message: "And this is how after clicking on the link, your bank account gets empty! Stay Focued while you get this type of messages or calls", 
+                buttonText: "Continue",
+                nextLink: "http://127.0.0.1:8000/dashboard/"
+            }
+        ]
+    },
+};
+
+let currentVideoId = 1;
+let popupTimeouts = []; // Store timeout IDs
+let currentPopupIndex = 0; // Track current popup
+
+// Get DOM elements
+const video = document.getElementById('mainVideo');
+const choiceOverlay = document.getElementById('choiceOverlay');
+const messageOverlay = document.getElementById('messageOverlay');
+const messageText = document.getElementById('messageText');
+const overlayYesBtn = document.getElementById('overlayYesBtn');
+const overlayNoBtn = document.getElementById('overlayNoBtn');
+const yesBtn = document.getElementById('yesBtn');
+const noBtn = document.getElementById('noBtn');
+const videoTitle = document.getElementById('videoTitle');
+const videoDescription = document.getElementById('videoDescription');
+const progressFill = document.getElementById('progressFill');
+const restartBtn = document.getElementById('restartBtn');
+
+// Clear all popup timeouts
+function clearPopupTimeouts() {
+    popupTimeouts.forEach(timeout => clearTimeout(timeout));
+    popupTimeouts = [];
+}
+
+// Show popup message overlay on video
+function showTimedPopup(popup) {
+    // Pause video
+    video.pause();
+    
+    // Update message content
+    messageText.textContent = popup.message;
+    overlayYesBtn.textContent = popup.yesText;
+    overlayNoBtn.textContent = popup.noText;
+    
+    // Show message overlay on video
+    messageOverlay.classList.add('show');
+}
+
+// Hide message overlay and resume video
+function hideTimedPopup() {
+    messageOverlay.classList.remove('show');
+    
+    // Reset button text
+    overlayYesBtn.textContent = "✓ YES";
+    overlayNoBtn.textContent = "✗ NO";
+    
+    // Resume video
+    video.play();
+}
+
+// Set up timed popups for current video
+function setupTimedPopups(videoInfo) {
+    clearPopupTimeouts();
+    currentPopupIndex = 0;
+    
+    if (videoInfo.timedPopups) {
+        videoInfo.timedPopups.forEach((popup, index) => {
+            const timeout = setTimeout(() => {
+                currentPopupIndex = index;
+                showTimedPopup(popup);
+            }, popup.time * 1000);
+            
+            popupTimeouts.push(timeout);
+        });
+    }
+}
+
+// Initialize the first video
+function loadVideo(videoId) {
+    const videoInfo = videoData[videoId];
+    
+    videoTitle.textContent = videoInfo.title;
+    videoDescription.textContent = videoInfo.description || "Continue your adventure...";
+    video.src = videoInfo.src;
+    
+    // Update progress bar
+    const totalVideos = Object.keys(videoData).length;
+    const progress = (videoId / totalVideos) * 100;
+    progressFill.style.width = progress + '%';
+    
+    // Hide overlays
+    choiceOverlay.classList.remove('show');
+    messageOverlay.classList.remove('show');
+    
+    // Clear any existing timeouts
+    clearPopupTimeouts();
+    
+    // Load and setup video
+    video.load();
+    
+    // Setup timed popups when video can play
+    video.addEventListener('canplay', function setupPopups() {
+        setupTimedPopups(videoInfo);
+        video.removeEventListener('canplay', setupPopups);
+    });
+}
+
+// Show choices when video ends
+video.addEventListener('ended', () => {
+    clearPopupTimeouts(); // Clear any remaining timeouts
+    
+    const videoInfo = videoData[currentVideoId];
+    
+    // Check if this video has auto progression
+    if (videoInfo.autoNext) {
+        // Automatically load next video after a short delay
+        setTimeout(() => {
+            currentVideoId = videoInfo.autoNext;
+            loadVideo(currentVideoId);
+            
+            // Auto-play the next video
+            video.addEventListener('loadeddata', function autoPlayNext() {
+                video.play();
+                video.removeEventListener('loadeddata', autoPlayNext);
+            });
+        }, 1000); // 1 second delay before auto-progression
+        
+        // Show transition message
+        videoDescription.textContent = "Loading next scene...";
+        return;
+    }
+    
+    if (videoInfo.ending) {
+        // Show ending message in the info panel
+        videoDescription.textContent = videoInfo.ending;
+        videoTitle.textContent = videoInfo.title + " - COMPLETE!";
+    } else {
+        // Show choice buttons overlay
+        choiceOverlay.classList.add('show');
+    }
+});
+
+// Handle overlay Yes button click (for timed popups on video)
+overlayYesBtn.addEventListener('click', () => {
+    const videoInfo = videoData[currentVideoId];
+    
+    // Check if this is a timed popup and has navigation logic
+    if (messageOverlay.classList.contains('show') && videoInfo.timedPopups && videoInfo.timedPopups[currentPopupIndex]) {
+        const currentPopup = videoInfo.timedPopups[currentPopupIndex];
+        
+        // If there's a yesNext defined for this popup, navigate to that video
+        if (currentPopup.yesNext) {
+            currentVideoId = currentPopup.yesNext;
+            loadVideo(currentVideoId);
+            return;
+        }
+    }
+    
+    // Otherwise just hide popup and continue
+    hideTimedPopup();
+});
+
+// Handle overlay No button click (for timed popups on video)
+overlayNoBtn.addEventListener('click', () => {
+    const videoInfo = videoData[currentVideoId];
+    
+    // Check if this is a timed popup and has navigation logic
+    if (messageOverlay.classList.contains('show') && videoInfo.timedPopups && videoInfo.timedPopups[currentPopupIndex]) {
+        const currentPopup = videoInfo.timedPopups[currentPopupIndex];
+        
+        // If there's a noNext defined for this popup, navigate to that video
+        if (currentPopup.noNext) {
+            currentVideoId = currentPopup.noNext;
+            loadVideo(currentVideoId);
+            return;
+        }
+    }
+    
+    // Otherwise just hide popup and continue
+    hideTimedPopup();
+});
+
+// Handle Yes button click (for end-of-video choices)
+yesBtn.addEventListener('click', () => {
+    const videoInfo = videoData[currentVideoId];
+    
+    if (videoInfo.yesNext) {
+        currentVideoId = videoInfo.yesNext;
+        loadVideo(currentVideoId);
+    }
+});
+
+// Handle No button click (for end-of-video choices)
+noBtn.addEventListener('click', () => {
+    const videoInfo = videoData[currentVideoId];
+    
+    if (videoInfo.noNext) {
+        currentVideoId = videoInfo.noNext;
+        loadVideo(currentVideoId);
+    }
+});
+
+// Restart adventure
+restartBtn.addEventListener('click', () => {
+    currentVideoId = 1;
+    loadVideo(currentVideoId);
+    // Auto-play the first video
+    video.addEventListener('loadeddata', function autoPlay() {
+        video.play();
+        video.removeEventListener('loadeddata', autoPlay);
+    });
+});
+
+// Initialize first video
+loadVideo(1);
+
+
+// Add some visual effects
+video.addEventListener('loadstart', () => {
+    videoTitle.style.animation = 'fadeIn 0.5s ease-in';
+    videoDescription.style.animation = 'fadeIn 0.5s ease-in 0.2s both';
+});
+    </script>
+    <a href="https://"><button class="restart-btn game-btn">START</button></a>
+            
+
+</body>
+</html>
